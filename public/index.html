@@ -825,19 +825,28 @@ document.addEventListener('DOMContentLoaded', () => {
         async function sendMessage() {
     const input = document.getElementById('userInput');
     const message = input.value.trim();
+    const MAX_RETRIES = 3;
+    let retryCount = 0;
     
-    if (message) {
-        appendMessage('user-message', message);
-        input.value = '';
-
-        const chatHistoryDiv = document.getElementById('chatHistory');
-        const loadingDiv = document.createElement('div');
-        loadingDiv.className = 'message ai-message';
-        loadingDiv.textContent = 'Typing...';
+    if (!message) return;
+    
+    appendMessage('user-message', message);
+    input.value = '';
+    
+    const chatHistoryDiv = document.getElementById('chatHistory');
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'message ai-message';
+    
+    async function attempt() {
+        loadingDiv.textContent = retryCount > 0 
+            ? `Retrying... (${retryCount}/${MAX_RETRIES})` 
+            : 'Typing...';
         chatHistoryDiv.appendChild(loadingDiv);
         
         try {
-            console.log('Attempting to send message:', message);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            
             const response = await fetch('https://www.santai.wtf/api/chat', {
                 method: 'POST',
                 headers: {
@@ -847,38 +856,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     message: message,
                     systemPrompt: SYSTEM_PROMPT
-                })
+                }),
+                signal: controller.signal
             });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('API Response Error:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    error: errorText
-                });
-                throw new Error(errorText);
-            }
-
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
             const data = await response.json();
-            console.log('API Response:', data);
             chatHistoryDiv.removeChild(loadingDiv);
-
-            if (data && data.content && data.content[0] && data.content[0].text) {
-                appendMessage('ai-message', data.content[0].text);
-            } else {
-                console.error('Unexpected response format:', data);
-                throw new Error('Unexpected response format');
-            }
-
+            appendMessage('ai-message', data.content[0].text);
+            
         } catch (error) {
-            console.error('Full error details:', error);
-            if (loadingDiv.parentNode) {
-                chatHistoryDiv.removeChild(loadingDiv);
+            console.error('Error:', error);
+            
+            if (retryCount < MAX_RETRIES) {
+                retryCount++;
+                await new Promise(r => setTimeout(r, Math.pow(2, retryCount) * 1000));
+                return attempt();
             }
-            appendMessage('ai-message', `Error: ${error.message}`);
+            
+            chatHistoryDiv.removeChild(loadingDiv);
+            appendMessage('ai-message', 'Unable to connect to the server. Please try again later.');
         }
     }
+    
+    attempt();
 }
 
         function handleKeyPress(event) {
