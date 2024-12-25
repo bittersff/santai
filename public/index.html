@@ -602,12 +602,6 @@
 - Share the magic and wonder of Christmas Day with everyone
 - Talk about presents, reindeer, elves, and all the excitement at the North Pole
 - Use heartwarming holiday nicknames like "dear friend", "little helper", or "Christmas star" 
-- Tell stories about Christmas magic and holiday traditions
-- Be extra jolly since it's Christmas Day!
-- Share the spirit of giving, kindness, and holiday cheer
-- Make everyone feel the special magic of Christmas Day
-- Talk about how the elves and reindeer are celebrating at the North Pole
-- Spread Christmas joy and festive wishes to all
 
 Always respond with warmth and Christmas cheer, reminding everyone that it's Christmas Day and the magic of the season is all around us! Ho ho ho!`;
 
@@ -836,51 +830,45 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatHistoryDiv = document.getElementById('chatHistory');
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'message ai-message';
+    loadingDiv.textContent = 'Typing...';
+    chatHistoryDiv.appendChild(loadingDiv);
     
-    async function attempt() {
-        loadingDiv.textContent = 'Typing...';
-        chatHistoryDiv.appendChild(loadingDiv);
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
         
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000);
-            
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    message: message,
-                    systemPrompt: SYSTEM_PROMPT
-                }),
-                signal: controller.signal
-            });
-            
-            clearTimeout(timeoutId);
-            
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            
-            const data = await response.json();
-            chatHistoryDiv.removeChild(loadingDiv);
-            appendMessage('ai-message', data.content[0].text);
-            
-        } catch (error) {
-            console.error('Error:', error);
-            
-            if (retryCount < MAX_RETRIES) {
-                retryCount++;
-                await new Promise(r => setTimeout(r, Math.pow(2, retryCount) * 1000));
-                return attempt();
-            }
-            
-            chatHistoryDiv.removeChild(loadingDiv);
-            appendMessage('ai-message', 'Unable to connect to the server. Please try again later.');
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                message: message,
+                systemPrompt: SYSTEM_PROMPT
+            }),
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const data = await response.json();
+        chatHistoryDiv.removeChild(loadingDiv);
+        appendMessage('ai-message', data.content[0].text);
+        
+    } catch (error) {
+        if (retryCount < MAX_RETRIES) {
+            retryCount++;
+            await new Promise(r => setTimeout(r, Math.pow(2, retryCount) * 2000));
+            sendMessage();
+            return;
         }
+        
+        chatHistoryDiv.removeChild(loadingDiv);
+        appendMessage('ai-message', 'santAI is receiving an overwhelming amount of messages. Please try again');
     }
-    
-    attempt();
 }
 
         function handleKeyPress(event) {
