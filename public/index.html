@@ -504,7 +504,7 @@
     src="https://raw.githubusercontent.com/VigansCode/SantaAI/main/mutant_walking_santa_texture_in_description.glb"
     animation-name="walk"
     autoplay
-    camera-target="0 1.5 0"
+    camera-target="0 2 0"
     camera-orbit="0deg 75deg 5m"
     field-of-view="25deg"
     exposure="1.5"
@@ -699,8 +699,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingOverlay = document.querySelector('.loading-overlay');
     
     viewer.addEventListener('load', () => {
-    viewer.cameraOrbit = "0deg 80deg 2m";
-    viewer.cameraTarget = "0m 3m 0m";  // Increased Y value to move Santa up
+    viewer.cameraOrbit = "0deg 80deg 1.4m";  // Keep original orbit
+    viewer.cameraTarget = "0m 2m 0m";        // Just slightly higher than original 1.6m
     viewer.interactionPrompt = null;
         
         setTimeout(() => {
