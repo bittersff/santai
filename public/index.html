@@ -838,9 +838,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadingDiv.className = 'message ai-message';
     
     async function attempt() {
-        loadingDiv.textContent = retryCount > 0 
-            ? `Retrying... (${retryCount}/${MAX_RETRIES})` 
-            : 'Typing...';
+        loadingDiv.textContent = 'Typing...';
         chatHistoryDiv.appendChild(loadingDiv);
         
         try {
